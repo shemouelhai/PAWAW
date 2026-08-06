@@ -1,0 +1,35 @@
+{
+  "env": {
+    "braham_foret_sud": "images/Env/Braham.png",
+    "braham_entree": "images/Env/Braham entrée.png",
+    "center_mont_librarchy": "images/Env/CENTER Mont Librarchy.png",
+    "chemin_zone_depart_0v": "images/Env/Chemin zone de depart 0 V .png",
+    "chemin_zone_depart_2_to_librarchy": "images/Env/Chemin zone de depart 2 to Librarchy.png",
+    "feas_city": "images/Env/Féas city.png",
+    "feas_social_place": "images/Env/Féas social place intersectives env.png",
+    "librarchy_face_utop": "images/Env/Librarchy face utop.png",
+    "librarchy_face_veo": "images/Env/Librarchy face veo.png",
+    "mont_anark": "images/Env/Mont anark.png",
+    "separation_anark_braham": "images/Env/Separation jointure anark et braham way.png",
+    "utop_fea_tree": "images/Env/Utop Féa tree.png",
+    "utop": "images/Env/Utop.png",
+    "v_center_of_via": "images/Env/V center of ViA.png",
+    "veo_1": "images/Env/Veo 1.png",
+    "zone_depart_to_anark_1": "images/Env/Zone de depart to anark 1.png",
+
+    "characters": {
+      "aliscia_s1": "images/characters/Aliscia S1.png",
+      "creation_humain": "images/characters/Creation perso humain.png",
+      "creation_nain": "images/characters/Creation perso nain.e.png",
+      "trollorc": "images/characters/Creation trollorc.png",
+      "demone": "images/characters/Demone.png",
+      "dracoman": "images/characters/Dracoman.png",
+      "tox": "images/characters/Tox.png",
+      "zex": "images/characters/Zex.png",
+      "valorious": "images/characters/Valorious Utomy.png",
+      "pnj_mage": "images/characters/Pnj mage .png",
+      "high_sai_50": "images/characters/Hight Saï level 50.png",
+      "humain_modifie": "images/characters/Humain modifié v forme ultime.png"
+    }
+  }
+}
