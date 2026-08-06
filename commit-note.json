@@ -1,0 +1,4 @@
+{
+  "message": "Add server-side scene generation + frontend scene renderer and collision modules",
+  "branch": "story-mode-quest"
+}
