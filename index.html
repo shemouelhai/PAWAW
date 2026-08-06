@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PAWAW — Librarchy Hub (demo)</title>
+  <meta name="description" content="PAWAW — e-comic narratif + RPG hybrid PWA (demo local)" />
+  <meta name="theme-color" content="#0f1113" />
+  <style>
+    /* ---------- Basic CSS (embedded) ---------- */
+    :root{--bg:#071017;--card:#0f1720;--accent:#ffcc00;--muted:#9aa5b1;--glass:rgba(255,255,255,0.03)}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#071017 0%, #0b1320 100%);color:#e6eef6}
+    header#hero{position:relative;height:36vh;min-height:220px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+    #hero-video{position:absolute;right:0;top:0;min-width:100%;min-height:100%;opacity:0.12;filter:grayscale(10%) blur(0.6px)}
+    .hero-overlay{position:relative;z-index:2;text-align:center;padding:14px}
+    #title{margin:0;font-size:clamp(20px,3.6vw,40px);letter-spacing:1px}
+    #slogan{margin:6px 0 14px;color:var(--muted)}
+    #hero-controls{display:flex;gap:10px;justify-content:center;align-items:center}
+    button.btn{background:linear-gradient(90deg,#162a3a,#0e2430);border:1px solid rgba(255,255,255,0.04);color:var(--accent);padding:8px 12px;border-radius:8px;cursor:pointer}
+    .scene{position:relative;padding:12px;display:flex;gap:12px;justify-content:center}
+    #scene-canvas{background:linear-gradient(180deg,#08121a,#071017);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,0.6);max-width:100%;height:auto}
+    .portal{width:56px;height:56px;border-radius:10px;background:var(--glass);border:1px solid rgba(255,255,255,0.03);position:absolute;opacity:0.9}
+    #portal-story{left:8%;top:42%} #portal-arena{left:22%;top:64%} #portal-farm{left:84%;top:46%} #portal-secret{left:60%;top:20%}
+    #minimap{position:absolute;right:8px;top:8px;background:rgba(6,10,14,0.6);padding:8px;border-radius:6px;width:180px}
+    #joystick{position:fixed;right:18px;bottom:12px;width:72px;height:72px;border-radius:999px;background:rgba(255,255,255,0.03);display:flex;align-items:center;justify-content:center}
+    #stick{width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,0.06)}
+    .modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#091219;padding:16px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);z-index:40;min-width:320px}
+    .hidden{display:none}
+    .narrative{position:absolute;left:8%;bottom:6%;background:linear-gradient(180deg, rgba(2,6,10,0.9), rgba(8,12,18,0.75));padding:12px;border-radius:8px;max-width:520px}
+    .qte-area{height:120px;background:rgba(255,255,255,0.02);border-radius:6px;margin:8px 0;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+    footer{padding:10px;text-align:center;color:var(--muted);font-size:12px}
+    /* responsive */
+    @media (max-width:800px){ #minimap{display:none} #portal-story{left:6%;top:64%} }
+  </style>
+</head>
+<body>
+  <header id="hero">
+    <video id="hero-video" autoplay loop muted playsinline src="" aria-hidden="true"></video>
+    <div class="hero-overlay">
+      <h1 id="title">PAWAW — LE LIVRE DE COMPTE DE .V.</h1>
+      <p id="slogan">ViA — Architecte de synthèse • E-comic animé × RPG</p>
+      <div id="hero-controls">
+        <button class="btn" id="open-creator">Créer personnage</button>
+        <button class="btn" id="open-comic">Ouvrir e-Comic</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="scene" id="scene-wrapper">
+      <canvas id="scene-canvas" width="1200" height="720"></canvas>
+
+      <div class="portal" id="portal-story" data-portal="braham_foret_sud" title="Histoire"></div>
+      <div class="portal" id="portal-arena" data-portal="arena" title="Arène PvP"></div>
+      <div class="portal" id="portal-farm" data-portal="farm" title="Farm/Leveling"></div>
+      <div class="portal" id="portal-secret" data-portal="secret" title="Quêtes Secrètes"></div>
+
+      <div id="minimap">
+        <strong>Minicarte</strong>
+        <div id="minimap-canvas" style="height:88px;margin-top:6px"></div>
+      </div>
+
+      <div id="joystick"><div id="stick"></div></div>
+
+      <div id="narrative-box" class="narrative hidden">
+        <div id="narrative-text">Narration...</div>
+        <div style="margin-top:8px">
+          <button class="btn" id="nv-btn-1">Action A</button>
+          <button class="btn" id="nv-btn-2">Action B</button>
+          <button class="btn" id="nv-btn-3">Action C</button>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- Modals -->
+  <div id="creator-modal" class="modal hidden" aria-hidden="true">
+    <h3>Créer Personnage</h3>
+    <form id="char-form">
+      <input name="name" placeholder="Nom" style="width:100%;padding:8px;border-radius:6px;margin-bottom:8px"><br>
+      <select name="faction" style="width:100%;padding:8px;margin-bottom:8px">
+        <option value="UTOP">UTOP</option><option value="BRAHAM">BRAHAM</option><option value="ANARK">ANARK</option><option value="EVO">.V. (EVO)</option>
+      </select>
+      <button class="btn" type="submit">Enregistrer</button>
+      <button id="close-creator" type="button" class="btn" style="margin-left:8px">Fermer</button>
+    </form>
+  </div>
+
+  <div id="comic-modal" class="modal hidden" aria-hidden="true">
+    <h3>Lecteur e-Comic</h3>
+    <div id="comic-pages" style="min-height:160px"></div>
+    <button id="comic-close" class="btn">Fermer</button>
+  </div>
+
+  <div id="qte-modal" class="modal hidden" aria-hidden="true">
+    <div id="qte-timer">0s</div>
+    <div id="qte-area" class="qte-area">Tape ici !</div>
+    <div id="qte-score">Puissance: 0</div>
+    <button id="qte-cancel" class="btn">Annuler</button>
+  </div>
+
+  <footer>PAWAW — Prototype local • Ne pas publier de clés dans ce dépôt</footer>
+
+  <!-- ---------- Embedded JS (tous les modules) ---------- -->
+  <script>
+  /* ---------- Utility & Scene Renderer (simplifié) ---------- */
+  (function(){
+    window.SceneRenderer = {
+      repoRaw: function(path){ return path && path.startsWith('/') ? path.slice(1) : path || ''; },
+      renderScene: async function(canvas, scene){
+        const ctx = canvas.getContext('2d');
+        // clear
+        ctx.fillStyle = '#071017';
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        // background (if provided, assume path is /assets/images/...)
+        if(scene && scene.background){
+          const img = new Image(); img.src = scene.background;
+          await new Promise(r=>{ img.onload=r; img.onerror=r; });
+          // draw scaled cover
+          const r = Math.max(canvas.width / img.width, canvas.height / img.height);
+          const w = img.width * r, h = img.height * r;
+          ctx.drawImage(img, (canvas.width - w)/2, (canvas.height - h)/2, w, h);
+        } else {
+          // placeholder gradient
+          const g = ctx.createLinearGradient(0,0,0,canvas.height);
+          g.addColorStop(0,'#071017'); g.addColorStop(1,'#0b1320');
+          ctx.fillStyle = g; ctx.fillRect(0,0,canvas.width,canvas.height);
+        }
+        // draw items
+        const items = (scene && scene.items)||[];
+        items.sort((a,b)=> (a.y||0)-(b.y||0));
+        for(const it of items){
+          if(it.sprite){
+            const img = new Image(); img.src = it.sprite;
+            await new Promise(r=>{ img.onload=r; img.onerror=r; });
+            ctx.drawImage(img, it.x||0, it.y||0, it.w||48, it.h||48);
+          } else {
+            ctx.fillStyle='#444'; ctx.fillRect(it.x||0,it.y||0,it.w||48,it.h||48);
+          }
+        }
+        // draw npcs
+        const npcs = (scene && scene.npcs)||[];
+        for(const n of npcs){
+          if(n.sprite){ const im=new Image(); im.src=n.sprite; await new Promise(r=>{im.onload=r;im.onerror=r}); ctx.drawImage(im,n.x||0,n.y||0,n.w||48,n.h||72) }
+          else { ctx.fillStyle='#6a6'; ctx.fillRect(n.x||0,n.y||0,n.w||48,n.h||72) }
+        }
+        // draw player
+        const p = (scene && scene.player);
+        if(p){
+          if(p.skin){ const im=new Image(); im.src=p.skin; await new Promise(r=>{im.onload=r;im.onerror=r}); ctx.drawImage(im,p.x||50,p.y||300,p.w||64,p.h||96) }
+          else { ctx.fillStyle='#ffcc00'; ctx.fillRect(p.x||50,p.y||300,p.w||64,p.h||96) }
+        }
+      }
+    };
+  })();
+  </script>
+
+  <script>
+  /* ---------- Collision ---------- */
+  (function(){ window.Collision = {
+    isColliding(a,b){ if(!a||!b) return false; return !(a.x+a.w < b.x || a.x > b.x+b.w || a.y+a.h < b.y || a.y > b.y+b.h); },
+    findCollision(playerRect, items){ for(const it of items||[]){ if(it.collision && window.Collision.isColliding(playerRect,{x:it.x,y:it.y,w:it.w,h:it.h})) return it } return null }
+  }})();
+  </script>
+
+  <script>
+  /* ---------- Equipment Manager (localStorage) ---------- */
+  (function(){
+    const KEY='pawaw_equipment_v1';
+    window.EquipmentManager = {
+      load(){ return JSON.parse(localStorage.getItem(KEY)||'{}') },
+      save(obj){ localStorage.setItem(KEY, JSON.stringify(obj)) },
+      equip(slot,item){ const e=window.EquipmentManager.load(); e[slot]=item; window.EquipmentManager.save(e); return e },
+      unequip(slot){ const e=window.EquipmentManager.load(); delete e[slot]; window.EquipmentManager.save(e); return e }
+    };
+  })();
+  </script>
+
+  <script>
+  /* ---------- Characters definitions ---------- */
+  (function(){
+    const Species = { UTOP:['humain','nain','geant','pawawian','haut_elfe','primaire','feas','gnome','ange','hybride'], ANARK:['elfe_de_braise','trollorc','lutain_gobelin','selenite','solarite','demone','geant','primordial','reptile','hybride'], EVO:['humain_modifie','animan_modifie','elfe_modifie','nain_modifie','geant_modifie','objet_nature_robotique','vehicule_vivant','android','boulboul','hybride'], BRAHAM:['oiseau','canin','felin','marine','fruit_de_mer','elementaliste','pawawian','solarite','selenite','hybride'] };
+    const Classes = { guerre:{id:'guerre',mod:{force:3,endurance:1}}, arts:{id:'arts',mod:{agil:2,int:1}}, courses:{id:'courses',mod:{vitesse:3}}, spirit:{id:'spirit',mod:{int:3}}, sciences:{id:'sciences',mod:{int:2,endurance:1}}, economy:{id:'economy',mod:{int:1}} };
+    const MovementModes = { WALK:{id:'walk',speedMult:1}, RUN:{id:'run',speedMult:1.45}, DASH:{id:'dash',speedMult:2.3,staminaCost:8}, SUPERJUMP:{id:'superjump',vertical:true}, FLY:{id:'fly',airborne:true}, TELEPORT:{id:'teleport',instant:true,cooldown:8000} };
+    function defaultStats(){ return { vit:100,end:100,force:10,vitesse:10,agil:10,int:10,puissance:0,level:1,xp:0 }; }
+    function createCharacter(opts={}){ const stats=defaultStats(); const cls=Classes[opts.klass]||Classes.guerre; for(const k in cls.mod) stats[k]=(stats[k]||0)+cls.mod[k]; return { id:'player_'+Date.now(), name:opts.name||'Player', faction:opts.faction||'UTOP', species:opts.species||'humain', klass:cls.id, mode:opts.mode||'WALK', stats, skin:opts.skin||'assets/images/placeholder-player.png', pos:{x:200,y:320}, size:{w:64,h:96}, equipment:[], inventory:[] }; }
+    window.PAWAW_Characters = { Species, Classes, MovementModes, createCharacter };
+  })();
+  </script>
+
+  <script>
+  /* ---------- Input (keyboard + touch joystick) ---------- */
+  (function(){
+    const keyState={}; const touchState={x:0,y:0,active:false}; window.addEventListener('keydown',e=>keyState[e.key.toLowerCase()]=true); window.addEventListener('keyup',e=>keyState[e.key.toLowerCase()]=false);
+    const stick=document.getElementById('stick'); if(stick){
+      let origin=null;
+      stick.addEventListener('touchstart',e=>{ const t=e.touches[0]; origin={x:t.clientX,y:t.clientY}; touchState.active=true; });
+      stick.addEventListener('touchmove',e=>{ const t=e.touches[0]; if(origin){ touchState.x=t.clientX-origin.x; touchState.y=t.clientY-origin.y; }});
+      stick.addEventListener('touchend',()=>{ touchState.active=false; touchState.x=0; touchState.y=0; origin=null; });
+    }
+    function getAxis(){ let ax=0,ay=0; if(keyState['arrowleft']||keyState['a']) ax-=1; if(keyState['arrowright']||keyState['d']) ax+=1; if(keyState['arrowup']||keyState['w']) ay-=1; if(keyState['arrowdown']||keyState['s']) ay+=1; if(touchState.active){ ax+=touchState.x/60; ay+=touchState.y/60 } ax=Math.max(-1,Math.min(1,ax)); ay=Math.max(-1,Math.min(1,ay)); return {x:ax,y:ay}; }
+    function isAction(name){ name=name.toLowerCase(); if(name==='jump') return keyState[' ']||keyState['space']; if(name==='attack') return keyState['z']||keyState['enter']; if(name==='interact') return keyState['e']||keyState['f']; return false; }
+    window.PAWAW_Input={getAxis,isAction,keyState,touchState};
+  })();
+  </script>
+
+  <script>
+  /* ---------- Player controller (movement + collisions) ---------- */
+  (function(){
+    function movePlayer(player,dt,axis){
+      const mode=window.PAWAW_Characters.MovementModes[player.mode]||window.PAWAW_Characters.MovementModes.WALK;
+      const base=(player.stats && player.stats.vitesse)||100;
+      const speed=base*(mode.speedMult||1)*(dt/16);
+      player.pos.x += axis.x * speed; player.pos.y += axis.y * speed;
+      const canvas=document.getElementById('scene-canvas'); if(canvas){ player.pos.x=Math.max(0,Math.min(canvas.width-(player.size.w||64),player.pos.x)); player.pos.y=Math.max(0,Math.min(canvas.height-(player.size.h||96),player.pos.y)); }
+      return player;
+    }
+    function update(player,dt){
+      const axis=window.PAWAW_Input.getAxis();
+      movePlayer(player,dt,axis);
+      const scene=window.currentScene||{};
+      const collided=window.Collision.findCollision({x:player.pos.x,y:player.pos.y,w:player.size.w,h:player.size.h},scene.items||[]);
+      if(collided){ player.pos.x -= (axis.x||0)*6; player.pos.y -= (axis.y||0)*6; player._collision=collided } else player._collision=null;
+      return player;
+    }
+    window.PAWAW_PlayerController={movePlayer,update};
+  })();
+  </script>
+
+  <script>
+  /* ---------- Animation helpers (video panels / sprites) ---------- */
+  (function(){
+    function playVideoInPanel(src, panelEl, maxSec=10){ panelEl=panelEl||document.getElementById('narrative-box'); panelEl.innerHTML=''; const v=document.createElement('video'); v.src=src; v.autoplay=true; v.playsInline=true; v.muted=false; panelEl.appendChild(v); v.addEventListener('loadedmetadata',()=>{ const duration=Math.min(maxSec,v.duration||maxSec); setTimeout(()=>v.pause(),duration*1000); }); return v; }
+    window.PAWAW_Animation={playVideoInPanel};
+  })();
+  </script>
+
+  <script>
+  /* ---------- NPC AI (stub) ---------- */
+  (function(){
+    async function generateNPCDialog(npc,playerState){ try{ const r=await fetch('/api/generate-npc-dialog',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({npc,player:playerState})}); if(r.ok) return await r.json(); return {text:npc.default||'...'} }catch(e){ return {text:npc.default||'...'} } }
+    function tick(npc,dt,scene,player){ if(!npc||!npc.ai) return; if(npc.ai.type==='patrol'&&npc.ai.path){ const t=npc.ai.path[npc.ai._idx||0]; if(!t)return; const dx=t.x-npc.pos.x, dy=t.y-npc.pos.y, dist=Math.hypot(dx,dy); if(dist<4) npc.ai._idx=((npc.ai._idx||0)+1)%npc.ai.path.length; else { npc.pos.x += (dx/dist)*(npc.speed||0.6)*(dt/16); npc.pos.y += (dy/dist)*(npc.speed||0.6)*(dt/16); } } }
+    window.PAWAW_NPCAI={generateNPCDialog,tick};
+  })();
+  </script>
+
+  <script>
+  /* ---------- Minimap ---------- */
+  (function(){
+    function renderMiniMap(containerEl,scene,options={}){ containerEl=containerEl||document.getElementById('minimap-canvas'); containerEl.innerHTML=''; const canvas=document.createElement('canvas'); const w=options.w||180,h=options.h||88; canvas.width=w; canvas.height=h; containerEl.appendChild(canvas); const ctx=canvas.getContext('2d'); ctx.fillStyle='#071017'; ctx.fillRect(0,0,w,h); const player=scene && scene.player; if(player){ const px=(player.pos.x/(options.sceneW||1200))*w, py=(player.pos.y/(options.sceneH||720))*h; ctx.fillStyle='#ffcc00'; ctx.beginPath(); ctx.arc(px,py,4,0,Math.PI*2); ctx.fill(); } (scene.items||[]).forEach(it=>{ const ix=(it.x/(options.sceneW||1200))*w, iy=(it.y/(options.sceneH||720))*h; ctx.fillStyle=it.type==='obstacle'?'#888':'#3cf'; ctx.fillRect(ix-2,iy-2,4,4); }); }
+    window.PAWAW_Minimap={renderMiniMap};
+  })();
+  </script>
+
+  <script>
+  /* ---------- Inventory & PayPal hooks (calls backend) ---------- */
+  (function(){
+    const store={inventory:JSON.parse(localStorage.getItem('pawaw_inv')||'[]')};
+    function save(){ localStorage.setItem('pawaw_inv',JSON.stringify(store.inventory)); }
+    async function buyItem(itemId,price){ const r=await fetch('/api/create-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({comicId:itemId,price})}); if(!r.ok) throw new Error('create-order failed'); return await r.json(); }
+    async function capture(orderId){ const r=await fetch('/api/capture-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderId})}); if(!r.ok) throw new Error('capture failed'); return await r.json(); }
+    function addItem(item){ store.inventory.push(item); save(); }
+    window.PAWAW_Inventory={addItem,buyItem,capture,list:()=>store.inventory};
+  })();
+  </script>
+
+  <script>
+  /* ---------- QTE ---------- */
+  (function(){
+    function startQTE({duration=2000,targetEl=document.getElementById('qte-area')}={}){ return new Promise(resolve=>{ const start=Date.now(); let score=0; const onTap=()=>score++; targetEl.addEventListener('click',onTap); const t=setInterval(()=>{ const elapsed=Date.now()-start; document.getElementById('qte-timer').textContent=Math.ceil(Math.max(0,(duration-elapsed)/1000))+'s'; document.getElementById('qte-score').textContent='Puissance: '+score; if(elapsed>=duration){ clearInterval(t); targetEl.removeEventListener('click',onTap); resolve({success:true,score}); } },100); document.getElementById('qte-cancel').onclick=()=>{ clearInterval(t); targetEl.removeEventListener('click',onTap); resolve({success:false,score}); }; }); }
+    window.PAWAW_QTE={startQTE};
+  })();
+  </script>
+
+  <script>
+  /* ---------- App init (main loop, portal bindings) ---------- */
+  (function(){
+    // create basic player if not exists
+    let player = JSON.parse(localStorage.getItem('pawaw_player')||'null');
+    if(!player){ player = window.PAWAW_Characters.createCharacter({name:'PlayerOne'}); localStorage.setItem('pawaw_player',JSON.stringify(player)); }
+    window.PAWAW_Player = player;
+
+    async function requestScene(zone){
+      try{
+        const resp = await fetch('/api/generate-scene',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({zone,player})});
+        if(!resp.ok) throw new Error('scene failed'); return await resp.json();
+      }catch(e){
+        // fallback simple scene
+        return { zone, background:'', items:[{id:'rock1',type:'obstacle',x:240,y:320,w:88,h:48,collision:true}], npcs:[], player:{...player,x:200,y:320,w:64,h:96} };
+      }
+    }
+
+    document.querySelectorAll('.portal').forEach(p=>{
+      p.addEventListener('click', async ()=>{ const zone=p.dataset.portal||'zone_default'; const scene=await requestScene(zone); window.currentScene=scene; scene.player = scene.player || player; await window.SceneRenderer.renderScene(document.getElementById('scene-canvas'),scene); window.PAWAW_Minimap.renderMiniMap(document.getElementById('minimap-canvas'),scene,{sceneW:1200,sceneH:720}); });
+    });
+
+    // open/close modals
+    document.getElementById('open-creator').onclick=()=>document.getElementById('creator-modal').classList.remove('hidden');
+    document.getElementById('close-creator').onclick=()=>document.getElementById('creator-modal').classList.add('hidden');
+    document.getElementById('open-comic').onclick=()=>document.getElementById('comic-modal').classList.remove('hidden');
+    document.getElementById('comic-close').onclick=()=>document.getElementById('comic-modal').classList.add('hidden');
+
+    // QTE demo on narrative
+    document.getElementById('nv-btn-1').onclick = async ()=>{
+      document.getElementById('qte-modal').classList.remove('hidden');
+      const r = await window.PAWAW_QTE.startQTE({duration:2000});
+      document.getElementById('qte-modal').classList.add('hidden'); alert('QTE result: '+JSON.stringify(r));
+    };
+
+    // main loop: update player and render small layers periodically
+    let last = performance.now();
+    async function loop(now){
+      const dt = now - last; last = now;
+      player = JSON.parse(localStorage.getItem('pawaw_player')||JSON.stringify(player));
+      const updated = window.PAWAW_PlayerController.update(player, dt);
+      localStorage.setItem('pawaw_player',JSON.stringify(updated));
+      if(window.currentScene){ window.currentScene.player = updated; window.SceneRenderer.renderScene(document.getElementById('scene-canvas'),window.currentScene).catch(()=>{}); window.PAWAW_Minimap.renderMiniMap(document.getElementById('minimap-canvas'),window.currentScene,{sceneW:1200,sceneH:720}); }
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+
+    console.log('PAWAW frontend (single file) initialized');
+  })();
+  </script>
+
+</body>
+</html>
