@@ -1,0 +1,10 @@
+# local env & node
+.env
+node_modules/
+.DS_Store
+dist/
+.vscode/
+*.log
+
+# generated
+backend/purchases.json
